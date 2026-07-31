@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # 1. Base de Datos PostgreSQL Producción
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: medocupa-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: medocupa_prod
+      POSTGRES_USER: medocupa_user
+      POSTGRES_PASSWORD: MedOcupaPass2026!
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medocupa_user -d medocupa_prod"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Aplicación MedOcupa ERP (Node.js + Express + Vite Frontend)
+  medocupa-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: medocupa-erp-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      APP_URL: "https://medocupa-erp.empresa.pe"
+      DATABASE_URL: "postgresql://medocupa_user:MedOcupaPass2026!@postgres-db:5432/medocupa_prod?schema=public"
+      JWT_SECRET: "PROD_MEDOCUPA_JWT_SECURE_SECRET_2026_RSA"
+      BACKUP_DIR: "/var/backups/medocupa"
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+
+  # 3. Servicio de Respaldos Automáticos Diarios (pg_dump)
+  db-backup:
+    image: postgres:16-alpine
+    container_name: medocupa-db-backup
+    restart: always
+    environment:
+      POSTGRES_DB: medocupa_prod
+      POSTGRES_USER: medocupa_user
+      POSTGRES_HOST: postgres-db
+      POSTGRES_PASSWORD: MedOcupaPass2026!
+      BACKUP_DIR: /backups
+    volumes:
+      - ./scripts/backup_db.sh:/backup_db.sh:ro
+      - backup_volume:/backups
+    entrypoint: ["/bin/sh", "-c", "chmod +x /backup_db.sh && echo '0 2 * * * /backup_db.sh >> /var/log/backup.log 2>&1' > /etc/crontabs/root && crond -f -l 2"]
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  backup_volume:
