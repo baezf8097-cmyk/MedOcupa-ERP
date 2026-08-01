@@ -1,0 +1,11 @@
+C:\Users\51983\Downloads\remix-erp-salud-ocupacional---medocupa-erp\src-tauri\target\release\deps\web_atoms-d008e212b7564c63.d: C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\web_atoms-0.2.5\lib.rs C:\Users\51983\Downloads\remix-erp-salud-ocupacional---medocupa-erp\src-tauri\target\release\build\web_atoms-f143cbc5af02cf65\out/named_entities.rs C:\Users\51983\Downloads\remix-erp-salud-ocupacional---medocupa-erp\src-tauri\target\release\build\web_atoms-f143cbc5af02cf65\out/generated.rs
+
+C:\Users\51983\Downloads\remix-erp-salud-ocupacional---medocupa-erp\src-tauri\target\release\deps\libweb_atoms-d008e212b7564c63.rlib: C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\web_atoms-0.2.5\lib.rs C:\Users\51983\Downloads\remix-erp-salud-ocupacional---medocupa-erp\src-tauri\target\release\build\web_atoms-f143cbc5af02cf65\out/named_entities.rs C:\Users\51983\Downloads\remix-erp-salud-ocupacional---medocupa-erp\src-tauri\target\release\build\web_atoms-f143cbc5af02cf65\out/generated.rs
+
+C:\Users\51983\Downloads\remix-erp-salud-ocupacional---medocupa-erp\src-tauri\target\release\deps\libweb_atoms-d008e212b7564c63.rmeta: C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\web_atoms-0.2.5\lib.rs C:\Users\51983\Downloads\remix-erp-salud-ocupacional---medocupa-erp\src-tauri\target\release\build\web_atoms-f143cbc5af02cf65\out/named_entities.rs C:\Users\51983\Downloads\remix-erp-salud-ocupacional---medocupa-erp\src-tauri\target\release\build\web_atoms-f143cbc5af02cf65\out/generated.rs
+
+C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\web_atoms-0.2.5\lib.rs:
+C:\Users\51983\Downloads\remix-erp-salud-ocupacional---medocupa-erp\src-tauri\target\release\build\web_atoms-f143cbc5af02cf65\out/named_entities.rs:
+C:\Users\51983\Downloads\remix-erp-salud-ocupacional---medocupa-erp\src-tauri\target\release\build\web_atoms-f143cbc5af02cf65\out/generated.rs:
+
+# env-dep:OUT_DIR=C:\\Users\\51983\\Downloads\\remix-erp-salud-ocupacional---medocupa-erp\\src-tauri\\target\\release\\build\\web_atoms-f143cbc5af02cf65\\out
