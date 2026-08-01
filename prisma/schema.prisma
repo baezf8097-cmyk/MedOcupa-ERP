@@ -1,0 +1,249 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Usuario {
+  id        String   @id @default(uuid())
+  nombre    String
+  email     String   @unique
+  password  String?
+  rol       String   @default("MEDICO_OCUPACIONAL")
+  cmp_rnm   String?
+  cep       String?
+  empresaId String?
+  avatar    String?  @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Empresa {
+  id                 String   @id @default(uuid())
+  ruc                String   @unique
+  razonSocial        String
+  nombreComercial    String?
+  ciiu               String?
+  actividadEconomica String?
+  direccion          String?
+  departamento       String?
+  provincia          String?
+  distrito           String?
+  nivelRiesgoSCTR    String   @default("ALTO")
+  totalTrabajadores  Int      @default(0)
+  contactoNombre     String?
+  contactoEmail      String?
+  contactoTelefono   String?
+  estado             String   @default("ACTIVA")
+  sedes              Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  trabajadores       Trabajador[]
+  emos               EMOExam[]
+  accidentes         AccidenteIncidente[]
+  ausentismos        AusentismoMedico[]
+  programas          ProgramaVigilancia[]
+  protocolos         ProtocoloExamenMedico[]
+}
+
+model Trabajador {
+  id               String    @id @default(uuid())
+  empresaId        String
+  sedeId           String?
+  tipoDocumento    String    @default("DNI")
+  numeroDocumento  String    @unique
+  nombres          String
+  apellidoPaterno  String
+  apellidoMaterno  String
+  fechaNacimiento  String
+  sexo             String
+  telefono         String?
+  email            String?
+  puestoTrabajo    String
+  area             String
+  grupoOcupacional String?
+  fechaIngreso     String
+  factoresRiesgo   Json?
+  estado           String    @default("ACTIVO")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  empresa          Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  emos             EMOExam[]
+  historias        HistoriaClinica[]
+  accidentes       AccidenteIncidente[]
+  ausentismos      AusentismoMedico[]
+  vacunas          RegistroVacuna[]
+}
+
+model EMOExam {
+  id                String    @id @default(uuid())
+  codigoEMO         String    @unique
+  trabajadorId      String
+  empresaId         String
+  tipoEMO           String
+  fechaProgramada   String
+  fechaRealizada    String?
+  estado            String    @default("PROGRAMADO")
+  medicoId          String?
+  protocoloAplicado String?
+  costoEMO          Float     @default(0)
+  evaluaciones      Json?
+  aptitud           Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  trabajador        Trabajador @relation(fields: [trabajadorId], references: [id], onDelete: Cascade)
+  empresa           Empresa    @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+}
+
+model HistoriaClinica {
+  id                             String    @id @default(uuid())
+  trabajadorId                   String    @unique
+  codigoHCO                      String    @unique
+  fechaApertura                  String
+  antecedentesPersonales         Json?
+  antecedentesOcupacionales       Json?
+  constantesVitalesMasRecientes  Json?
+  controlesPosteriores           Json?
+  diagnosticosCIE10              Json?
+  observacionesMedicas           String?
+  archivoPdf                     Json?
+  createdAt                      DateTime  @default(now())
+  updatedAt                      DateTime  @updatedAt
+
+  trabajador                     Trabajador @relation(fields: [trabajadorId], references: [id], onDelete: Cascade)
+}
+
+model AccidenteIncidente {
+  id                      String    @id @default(uuid())
+  codigoEvento            String    @unique
+  empresaId               String
+  trabajadorId            String
+  trabajadorNombreCustom  String?
+  trabajadorDniCustom     String?
+  tipo                    String
+  fechaHora               String
+  lugarExacto             String
+  descripcionHechos       String
+  parteCuerpoAfectada     String
+  diagnosticoCIE10        String
+  diasIncapacidad         Int       @default(0)
+  notificadoMTPE          Boolean   @default(false)
+  codigoRegistroSAT       String?
+  causasRaiz              Json?
+  medidasCorrectivas      Json?
+  estadoInvestigacion     String    @default("EN_INVESTIGACION")
+  archivoPdf              Json?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  empresa                 Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  trabajador              Trabajador @relation(fields: [trabajadorId], references: [id], onDelete: Cascade)
+}
+
+model AusentismoMedico {
+  id                   String    @id @default(uuid())
+  trabajadorId         String
+  empresaId            String
+  tipoAusencia         String
+  codigoCIE10          String
+  descripcionCIE10     String
+  fechaInicio          String
+  fechaFin             String
+  diasTotales          Int
+  centroMedicoEmisor   String?
+  medicoTratante       String?
+  cmpMedicoTratante    String?
+  montoSubsidioEstimado Float    @default(0)
+  certificadoPdf       Json?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  trabajador           Trabajador @relation(fields: [trabajadorId], references: [id], onDelete: Cascade)
+  empresa              Empresa    @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+}
+
+model ProgramaVigilancia {
+  id                          String    @id @default(uuid())
+  empresaId                   String
+  nombrePrograma              String
+  codigoPrograma              String?
+  categoria                   String?
+  descripcion                 String
+  baseLegal                   String?
+  medicoResponsable           String
+  poblacionExpuestaTotal      Int       @default(0)
+  trabajadoresEnVigilancia    Int       @default(0)
+  casosSospechosos            Int       @default(0)
+  casosConfirmados            Int       @default(0)
+  metaCumplimientoPorcentaje  Float     @default(100)
+  avanceActualPorcentaje      Float     @default(0)
+  estado                      String    @default("ACTIVO")
+  aplicaSegunRiesgo           Boolean?  @default(true)
+  periodicidadEvaluacion      String?
+  indicadoresClave            Json?
+  capacitaciones              Json?
+  fechaVencimiento            String?
+  proximaEvaluacionFecha      String?
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+
+  empresa                     Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+}
+
+model RegistroVacuna {
+  id                   String    @id @default(uuid())
+  trabajadorId         String
+  vacunaNombre         String
+  dosisNumero          Int
+  fechaAplicacion      String
+  lote                 String
+  laboratorio          String
+  aplicada             Boolean?  @default(true)
+  tieneProximoRefuerzo Boolean?  @default(false)
+  proximaDosisFecha    String?
+  observaciones        String?
+  aplicadoPor          String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  trabajador           Trabajador @relation(fields: [trabajadorId], references: [id], onDelete: Cascade)
+}
+
+model ProtocoloExamenMedico {
+  id                    String    @id @default(uuid())
+  empresaId             String?
+  nombreProtocolo       String
+  codigoProtocolo       String    @unique
+  sectorActividad       String
+  tipoEvaluacion        String
+  normaLegalBase        String
+  descripcionBateria    String
+  estado                String    @default("ACTIVO")
+  version               String    @default("1.0")
+  fechaAprobacion       String
+  fechaVencimiento      String?
+  proximaRevisionFecha  String?
+  archivoProtocolo      Json?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  empresa               Empresa?  @relation(fields: [empresaId], references: [id], onDelete: SetNull)
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  timestamp String
+  usuario   String
+  rol       String
+  accion    String
+  recurso   String
+  ip        String
+  resultado String   @default("EXITO")
+  detalles  String
+  createdAt DateTime @default(now())
+}

@@ -1,0 +1,6 @@
+{
+  "name": "ERP Salud Ocupacional - MedOcupa ERP",
+  "description": "Sistema ERP Especializado en Salud Ocupacional conforme a la Normativa Peruana (Ley 29783, RM 312-2011-MINSA, DS 005-2012-TR) con documentación técnica, especificaciones IEEE SRS, motor de reglas de negocio, arquitectura y módulos operativos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
