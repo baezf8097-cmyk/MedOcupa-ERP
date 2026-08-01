@@ -2,44 +2,38 @@ name: "Release App (Tauri)"
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   release:
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [windows-latest]
-
-    runs-on: ${{ matrix.platform }}
+    runs-on: windows-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: 20
-          cache: 'npm'
+          bun-version: latest
 
-      - name: Install Rust stable
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install
 
       - name: Build Tauri App
-       uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: v__VERSION__
-          releaseName: 'MedOcupa ERP v__VERSION__'
-          releaseBody: 'Descarga el instalador ejecutable de MedOcupa ERP para Windows (.exe y .msi).'
-          releaseDraft: true
+          tagName: v1.0.0
+          releaseName: "MedOcupa ERP v1.0.0"
+          releaseBody: "Instalador ejecutable de MedOcupa ERP para Windows."
+          releaseDraft: false
           prerelease: false
