@@ -220,6 +220,8 @@ export interface HistoriaClinicaOcupacional {
     temperatura: number;
     imc: number;
     saturacionO2: number;
+    peso?: number;
+    talla?: number;
   };
 
   controlesPosteriores?: ControlSeguimientoMedico[];

@@ -1,0 +1,10 @@
+C:\Users\51983\Downloads\VERSION 3\remix-erp-salud-ocupacional---medocupa-erp(1)\src-tauri\target\release\deps\litemap-a27a7aa8cad9cd03.d: C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\litemap-0.8.2\src\lib.rs C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\litemap-0.8.2\src\map.rs C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\litemap-0.8.2\src\store\mod.rs C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\litemap-0.8.2\src\store\slice_impl.rs
+
+C:\Users\51983\Downloads\VERSION 3\remix-erp-salud-ocupacional---medocupa-erp(1)\src-tauri\target\release\deps\liblitemap-a27a7aa8cad9cd03.rlib: C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\litemap-0.8.2\src\lib.rs C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\litemap-0.8.2\src\map.rs C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\litemap-0.8.2\src\store\mod.rs C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\litemap-0.8.2\src\store\slice_impl.rs
+
+C:\Users\51983\Downloads\VERSION 3\remix-erp-salud-ocupacional---medocupa-erp(1)\src-tauri\target\release\deps\liblitemap-a27a7aa8cad9cd03.rmeta: C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\litemap-0.8.2\src\lib.rs C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\litemap-0.8.2\src\map.rs C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\litemap-0.8.2\src\store\mod.rs C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\litemap-0.8.2\src\store\slice_impl.rs
+
+C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\litemap-0.8.2\src\lib.rs:
+C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\litemap-0.8.2\src\map.rs:
+C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\litemap-0.8.2\src\store\mod.rs:
+C:\Users\51983\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\litemap-0.8.2\src\store\slice_impl.rs:

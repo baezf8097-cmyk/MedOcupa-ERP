@@ -23,6 +23,7 @@ import { ReportesMINSAMTPE } from './components/reportes/ReportesMINSAMTPE';
 import { GuiaMaestraModule } from './components/guia/GuiaMaestraModule';
 import { PerfilesYPermisosView } from './components/auth/PerfilesYPermisosView';
 import { RequireRole } from './components/auth/RequireRole';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Documentation Views
 import { DocDefinicionView } from './components/docs/DocDefinicionView';
@@ -648,200 +649,228 @@ export default function App() {
         <main className="flex-1 bg-slate-900 p-6 overflow-y-auto custom-scrollbar space-y-6">
           {/* OPERATIONAL MODULES */}
           {activeTab === 'dashboard' && (
-            <DashboardOverview
-              empresa={activeEmpresa}
-              emos={filteredEmos}
-              trabajadores={filteredTrabajadores}
-              accidentes={filteredAccidentes}
-              ausentismos={filteredAusentismos}
-              programas={filteredProgramas}
-              protocolos={protocolos}
-              onNavigateTab={setActiveTab}
-            />
+            <ErrorBoundary moduleName="Dashboard">
+              <DashboardOverview
+                empresa={activeEmpresa}
+                emos={filteredEmos}
+                trabajadores={filteredTrabajadores}
+                accidentes={filteredAccidentes}
+                ausentismos={filteredAusentismos}
+                programas={filteredProgramas}
+                protocolos={protocolos}
+                onNavigateTab={setActiveTab}
+              />
+            </ErrorBoundary>
           )}
 
           {activeTab === 'empresas' && (
-            <EmpresasModule
-              empresas={filteredEmpresas}
-              onAddEmpresa={handleAddEmpresa}
-              onUpdateEmpresa={handleUpdateEmpresa}
-              onDeleteEmpresa={handleDeleteEmpresa}
-            />
+            <ErrorBoundary moduleName="Empresas Clientes">
+              <EmpresasModule
+                empresas={filteredEmpresas}
+                onAddEmpresa={handleAddEmpresa}
+                onUpdateEmpresa={handleUpdateEmpresa}
+                onDeleteEmpresa={handleDeleteEmpresa}
+              />
+            </ErrorBoundary>
           )}
 
           {activeTab === 'trabajadores' && (
-            <TrabajadoresModule
-              trabajadores={filteredTrabajadores}
-              empresas={empresas}
-              selectedEmpresaId={selectedEmpresaId}
-              onAddTrabajador={handleAddTrabajador}
-              onUpdateTrabajador={handleUpdateTrabajador}
-              onDeleteTrabajador={handleDeleteTrabajador}
-              onSelectTrabajadorForHCO={handleNavigateToHCO}
-            />
+            <ErrorBoundary moduleName="Nómina de Trabajadores">
+              <TrabajadoresModule
+                trabajadores={filteredTrabajadores}
+                empresas={empresas}
+                selectedEmpresaId={selectedEmpresaId}
+                onAddTrabajador={handleAddTrabajador}
+                onUpdateTrabajador={handleUpdateTrabajador}
+                onDeleteTrabajador={handleDeleteTrabajador}
+                onSelectTrabajadorForHCO={handleNavigateToHCO}
+              />
+            </ErrorBoundary>
           )}
 
           {activeTab === 'historia_clinica' && (
             <RequireRole currentRole={currentRole} moduleKey="historia_clinica" action="leer">
-              <HistoriaClinicaModule
-                historias={filteredHistorias}
-                trabajadores={filteredTrabajadores}
-                empresas={empresas}
-                selectedTrabajadorId={selectedTrabajadorForHCO}
-                onUpdateHistoria={handleUpdateHistoria}
-              />
+              <ErrorBoundary moduleName="Historias Clínicas Ocupacionales">
+                <HistoriaClinicaModule
+                  historias={filteredHistorias}
+                  trabajadores={filteredTrabajadores}
+                  empresas={empresas}
+                  selectedTrabajadorId={selectedTrabajadorForHCO}
+                  onUpdateHistoria={handleUpdateHistoria}
+                />
+              </ErrorBoundary>
             </RequireRole>
           )}
 
           {activeTab === 'emo_examenes' && (
             <RequireRole currentRole={currentRole} moduleKey="emo" action="leer">
-              <EMOModule
-                emos={filteredEmos}
-                trabajadores={filteredTrabajadores}
-                empresas={empresas}
-                onAddEMO={handleAddEMO}
-                onUpdateEMO={handleUpdateEMO}
-                onDeleteEMO={handleDeleteEMO}
-                onDeleteTrabajador={handleDeleteTrabajador}
-                onOpenAptitudModal={handleOpenAptitudModal}
-              />
+              <ErrorBoundary moduleName="EMO Exámenes">
+                <EMOModule
+                  emos={filteredEmos}
+                  trabajadores={filteredTrabajadores}
+                  empresas={empresas}
+                  onAddEMO={handleAddEMO}
+                  onUpdateEMO={handleUpdateEMO}
+                  onDeleteEMO={handleDeleteEMO}
+                  onDeleteTrabajador={handleDeleteTrabajador}
+                  onOpenAptitudModal={handleOpenAptitudModal}
+                />
+              </ErrorBoundary>
             </RequireRole>
           )}
 
           {activeTab === 'protocolos_medicos' && (
-            <ProtocolosModule
-              protocolos={protocolos}
-              empresas={empresas}
-              onAddProtocolo={handleAddProtocolo}
-              onUpdateProtocolo={handleUpdateProtocolo}
-              onDeleteProtocolo={handleDeleteProtocolo}
-            />
+            <ErrorBoundary moduleName="Protocolo EMO">
+              <ProtocolosModule
+                protocolos={protocolos}
+                empresas={empresas}
+                onAddProtocolo={handleAddProtocolo}
+                onUpdateProtocolo={handleUpdateProtocolo}
+                onDeleteProtocolo={handleDeleteProtocolo}
+              />
+            </ErrorBoundary>
           )}
 
           {activeTab === 'aptitudes' && (
-            <AptitudModule
-              emos={filteredEmos}
-              trabajadores={filteredTrabajadores}
-              empresas={empresas}
-              selectedEmoForAptitud={selectedEmoForAptitud}
-              onSaveAptitud={handleSaveAptitud}
-            />
+            <ErrorBoundary moduleName="Certificados de Aptitud">
+              <AptitudModule
+                emos={filteredEmos}
+                trabajadores={filteredTrabajadores}
+                empresas={empresas}
+                selectedEmoForAptitud={selectedEmoForAptitud}
+                onSaveAptitud={handleSaveAptitud}
+              />
+            </ErrorBoundary>
           )}
 
           {activeTab === 'accidentes' && (
-            <AccidentesModule
-              accidentes={filteredAccidentes}
-              trabajadores={filteredTrabajadores}
-              empresas={empresas}
-              onAddAccidente={handleAddAccidente}
-              onUpdateAccidente={handleUpdateAccidente}
-              onDeleteAccidente={handleDeleteAccidente}
-            />
+            <ErrorBoundary moduleName="Accidentes de Trabajo">
+              <AccidentesModule
+                accidentes={filteredAccidentes}
+                trabajadores={filteredTrabajadores}
+                empresas={empresas}
+                onAddAccidente={handleAddAccidente}
+                onUpdateAccidente={handleUpdateAccidente}
+                onDeleteAccidente={handleDeleteAccidente}
+              />
+            </ErrorBoundary>
           )}
 
           {activeTab === 'ausentismo' && (
-            <AusentismoModule
-              ausentismos={filteredAusentismos}
-              trabajadores={filteredTrabajadores}
-              empresas={empresas}
-              onAddAusentismo={handleAddAusentismo}
-              onUpdateAusentismo={handleUpdateAusentismo}
-              onDeleteAusentismo={handleDeleteAusentismo}
-            />
+            <ErrorBoundary moduleName="Ausentismo Laboral">
+              <AusentismoModule
+                ausentismos={filteredAusentismos}
+                trabajadores={filteredTrabajadores}
+                empresas={empresas}
+                onAddAusentismo={handleAddAusentismo}
+                onUpdateAusentismo={handleUpdateAusentismo}
+                onDeleteAusentismo={handleDeleteAusentismo}
+              />
+            </ErrorBoundary>
           )}
 
           {activeTab === 'vigilancia' && (
-            <VigilanciaModule
-              programas={filteredProgramas}
-              empresas={empresas}
-              trabajadores={filteredTrabajadores}
-              selectedEmpresaId={selectedEmpresaId}
-              onAddPrograma={async (newProg) => {
-                setProgramas(prev => [newProg, ...prev]);
-                addAuditLog('NUEVO_PROGRAMA_VIGILANCIA', `Programa: ${newProg.nombrePrograma}`);
-                if (token) {
-                  try {
-                    await fetch('/api/vigilancia', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                      body: JSON.stringify(newProg)
-                    });
-                  } catch (e) { console.error(e); }
-                }
-              }}
-              onUpdatePrograma={async (updatedProg) => {
-                setProgramas(prev => prev.map(p => p.id === updatedProg.id ? updatedProg : p));
-                addAuditLog('ACTUALIZACION_PROGRAMA_VIGILANCIA', `Programa: ${updatedProg.nombrePrograma}`);
-                if (token) {
-                  try {
-                    await fetch(`/api/vigilancia/${updatedProg.id}`, {
-                      method: 'PUT',
-                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                      body: JSON.stringify(updatedProg)
-                    });
-                  } catch (e) { console.error(e); }
-                }
-              }}
-              onDeletePrograma={async (id) => {
-                const prog = programas.find(p => p.id === id);
-                setProgramas(prev => prev.filter(p => p.id !== id));
-                addAuditLog('ELIMINAR_PROGRAMA_VIGILANCIA', `ID: ${id} - Nombre: ${prog?.nombrePrograma || id}`);
-                if (token) {
-                  try {
-                    await fetch(`/api/vigilancia/${id}`, {
-                      method: 'DELETE',
-                      headers: { Authorization: `Bearer ${token}` }
-                    });
-                  } catch (e) { console.error(e); }
-                }
-              }}
-            />
+            <ErrorBoundary moduleName="Vigilancia Médica">
+              <VigilanciaModule
+                programas={filteredProgramas}
+                empresas={empresas}
+                trabajadores={filteredTrabajadores}
+                selectedEmpresaId={selectedEmpresaId}
+                onAddPrograma={async (newProg) => {
+                  setProgramas(prev => [newProg, ...prev]);
+                  addAuditLog('NUEVO_PROGRAMA_VIGILANCIA', `Programa: ${newProg.nombrePrograma}`);
+                  if (token) {
+                    try {
+                      await fetch('/api/vigilancia', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        body: JSON.stringify(newProg)
+                      });
+                    } catch (e) { console.error(e); }
+                  }
+                }}
+                onUpdatePrograma={async (updatedProg) => {
+                  setProgramas(prev => prev.map(p => p.id === updatedProg.id ? updatedProg : p));
+                  addAuditLog('ACTUALIZACION_PROGRAMA_VIGILANCIA', `Programa: ${updatedProg.nombrePrograma}`);
+                  if (token) {
+                    try {
+                      await fetch(`/api/vigilancia/${updatedProg.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        body: JSON.stringify(updatedProg)
+                      });
+                    } catch (e) { console.error(e); }
+                  }
+                }}
+                onDeletePrograma={async (id) => {
+                  const prog = programas.find(p => p.id === id);
+                  setProgramas(prev => prev.filter(p => p.id !== id));
+                  addAuditLog('ELIMINAR_PROGRAMA_VIGILANCIA', `ID: ${id} - Nombre: ${prog?.nombrePrograma || id}`);
+                  if (token) {
+                    try {
+                      await fetch(`/api/vigilancia/${id}`, {
+                        method: 'DELETE',
+                        headers: { Authorization: `Bearer ${token}` }
+                      });
+                    } catch (e) { console.error(e); }
+                  }
+                }}
+              />
+            </ErrorBoundary>
           )}
 
           {activeTab === 'vacunas' && (
-            <VacunasModule 
-              vacunas={vacunas} 
-              trabajadores={filteredTrabajadores} 
-              onUpdateVacunas={async (newVacunas) => {
-                setVacunas(newVacunas);
-                addAuditLog('ACTUALIZAR_CARNE_VACUNAS', `Carné de Inmunizaciones actualizado (${newVacunas.length} dosis)`);
-                if (token) {
-                  try {
-                    await fetch('/api/vacunas', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                      body: JSON.stringify(newVacunas)
-                    });
-                  } catch (e) { console.error(e); }
-                }
-              }}
-            />
+            <ErrorBoundary moduleName="Carné de Inmunizaciones">
+              <VacunasModule 
+                vacunas={vacunas} 
+                trabajadores={filteredTrabajadores} 
+                onUpdateVacunas={async (newVacunas) => {
+                  setVacunas(newVacunas);
+                  addAuditLog('ACTUALIZAR_CARNE_VACUNAS', `Carné de Inmunizaciones actualizado (${newVacunas.length} dosis)`);
+                  if (token) {
+                    try {
+                      await fetch('/api/vacunas', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        body: JSON.stringify(newVacunas)
+                      });
+                    } catch (e) { console.error(e); }
+                  }
+                }}
+              />
+            </ErrorBoundary>
           )}
 
           {activeTab === 'reportes_minsa' && (
-            <ReportesMINSAMTPE empresas={empresas} />
+            <ErrorBoundary moduleName="Reportes MINSA / MTPE">
+              <ReportesMINSAMTPE empresas={empresas} />
+            </ErrorBoundary>
           )}
 
           {activeTab === 'guia_maestra' && (
-            <GuiaMaestraModule
-              empresas={empresas}
-              selectedEmpresaId={selectedEmpresaId}
-            />
+            <ErrorBoundary moduleName="Guía Maestra System">
+              <GuiaMaestraModule
+                empresas={empresas}
+                selectedEmpresaId={selectedEmpresaId}
+              />
+            </ErrorBoundary>
           )}
 
           {activeTab === 'perfiles_permisos' && (
-            <PerfilesYPermisosView
-              currentRole={currentRole}
-              onOpenEditProfile={() => setIsEditProfileOpen(true)}
-              onRoleChange={(newRole) => {
-                setCurrentRole(newRole);
-                if (currentUser) {
-                  const updatedUser = { ...currentUser, rol: newRole };
-                  setCurrentUser(updatedUser);
-                  localStorage.setItem('medocupa_user', JSON.stringify(updatedUser));
-                }
-              }}
-            />
+            <ErrorBoundary moduleName="Perfiles y Permisos">
+              <PerfilesYPermisosView
+                currentRole={currentRole}
+                onOpenEditProfile={() => setIsEditProfileOpen(true)}
+                onRoleChange={(newRole) => {
+                  setCurrentRole(newRole);
+                  if (currentUser) {
+                    const updatedUser = { ...currentUser, rol: newRole };
+                    setCurrentUser(updatedUser);
+                    localStorage.setItem('medocupa_user', JSON.stringify(updatedUser));
+                  }
+                }}
+              />
+            </ErrorBoundary>
           )}
 
           {/* TECHNICAL DOCUMENTATION VIEWS */}

@@ -353,32 +353,45 @@ export async function handleLocalApiRequest(
       }
       return { status: 200, data: { success: true, data: list, total: list.length } };
     }
-    if (normMethod === 'POST') {
-      const newHCO = {
-        id: `hco-${Date.now()}`,
-        numeroFicha: parsedBody.numeroFicha || `HCO-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-        trabajadorId: parsedBody.trabajadorId || '',
-        codigoHCO: parsedBody.codigoHCO || `HCO-${Date.now()}`,
-        fechaApertura: parsedBody.fechaApertura || new Date().toISOString().split('T')[0],
-        anamnesis: parsedBody.anamnesis || 'Sin hallazgos patológicos significativos.',
-        antecedentesPersonales: parsedBody.antecedentesPersonales || {
-          patologicas: [],
-          quirurgicas: [],
-          alergias: [],
-          habitosNocivos: 'Ninguno'
-        },
-        antecedentesOcupacionales: parsedBody.antecedentesOcupacionales || [],
-        evaluacionSistemas: parsedBody.evaluacionSistemas || {
-          cardiovascular: 'Normal', respiratorio: 'Normal', digestivo: 'Normal',
-          neurologico: 'Normal', osteomuscular: 'Sin hallazgos'
-        },
-        diagnosticosOcupacionales: parsedBody.diagnosticosOcupacionales || [],
-        medicoTratante: parsedBody.medicoTratante || 'Dr. Roberto Silva Alva',
-        cmpMedico: parsedBody.cmpMedico || 'CMP-74839'
-      };
-      store.historias.unshift(newHCO as any);
+    if (normMethod === 'POST' || normMethod === 'PUT') {
+      const existingIdx = store.historias.findIndex(h => 
+        (parsedBody.id && h.id === parsedBody.id) || 
+        (parsedBody.trabajadorId && h.trabajadorId === parsedBody.trabajadorId)
+      );
+
+      let savedHCO;
+      if (existingIdx >= 0) {
+        savedHCO = {
+          ...store.historias[existingIdx],
+          ...parsedBody
+        };
+        store.historias[existingIdx] = savedHCO as any;
+      } else {
+        savedHCO = {
+          id: parsedBody.id || `hco-${Date.now()}`,
+          numeroFicha: parsedBody.numeroFicha || `HCO-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+          trabajadorId: parsedBody.trabajadorId || '',
+          codigoHCO: parsedBody.codigoHCO || `HCO-${Date.now()}`,
+          fechaApertura: parsedBody.fechaApertura || new Date().toISOString().split('T')[0],
+          anamnesis: parsedBody.anamnesis || 'Sin hallazgos patológicos significativos.',
+          antecedentesPersonales: parsedBody.antecedentesPersonales || {
+            patologicas: [],
+            quirurgicas: [],
+            alergias: [],
+            habitosNocivos: 'Ninguno'
+          },
+          antecedentesOcupacionales: parsedBody.antecedentesOcupacionales || [],
+          evaluacionSistemas: parsedBody.evaluacionSistemas || {
+            cardiovascular: 'Normal', respiratorio: 'Normal', digestivo: 'Normal',
+            neurologico: 'Normal', osteomuscular: 'Sin hallazgos'
+          },
+          ...parsedBody
+        };
+        store.historias.unshift(savedHCO as any);
+      }
+
       saveClientStore(store);
-      return { status: 201, data: { success: true, message: 'Historia Clínica Creada', data: newHCO } };
+      return { status: 200, data: { success: true, message: 'Historia Clínica Guardada', data: savedHCO } };
     }
   }
 
@@ -509,15 +522,36 @@ export async function handleLocalApiRequest(
     if (normMethod === 'POST') {
       const newProt = {
         id: `prot-${Date.now()}`,
-        nombre: parsedBody.nombre || 'Protocolo Médico Ocupacional',
-        empresaId: parsedBody.empresaId || '',
-        puestoTrabajo: parsedBody.puestoTrabajo || 'General',
-        examenesIncluidos: parsedBody.examenesIncluidos || ['Triaje', 'Medicina General', 'Lab Básico'],
-        costoTotal: parsedBody.costoTotal || 150
+        empresaId: parsedBody.empresaId || store.empresas[0]?.id || 'emp-1',
+        nombreProtocolo: parsedBody.nombreProtocolo || parsedBody.nombre || 'Protocolo de Exámenes Médicos Ocupacionales (EMO)',
+        codigoProtocolo: parsedBody.codigoProtocolo || `PROT-EMO-${new Date().getFullYear()}-${Math.floor(Math.random() * 900 + 100)}`,
+        sectorActividad: parsedBody.sectorActividad || 'MINERIA',
+        tipoEvaluacion: parsedBody.tipoEvaluacion || 'TODOS',
+        normaLegalBase: parsedBody.normaLegalBase || 'R.M. 312-2011-MINSA Anexo 01 y 02',
+        descripcionBateria: parsedBody.descripcionBateria || 'Triaje Completo, Examen Clínico, Espirometría, Audiometría, Rx OIT 2000',
+        estado: parsedBody.estado || 'ACTIVO',
+        version: parsedBody.version || '1.0',
+        fechaAprobacion: parsedBody.fechaAprobacion || new Date().toISOString().split('T')[0],
+        archivoProtocolo: parsedBody.archivoProtocolo
       };
       store.protocolos.unshift(newProt as any);
       saveClientStore(store);
       return { status: 201, data: { success: true, message: 'Protocolo registrado', data: newProt } };
+    }
+  }
+
+  if (path.startsWith('/api/protocolos/')) {
+    const id = path.replace('/api/protocolos/', '');
+    const index = store.protocolos.findIndex(p => p.id === id);
+    if (normMethod === 'PUT' && index !== -1) {
+      store.protocolos[index] = { ...store.protocolos[index], ...parsedBody, id };
+      saveClientStore(store);
+      return { status: 200, data: { success: true, data: store.protocolos[index] } };
+    }
+    if (normMethod === 'DELETE' && index !== -1) {
+      store.protocolos.splice(index, 1);
+      saveClientStore(store);
+      return { status: 200, data: { success: true, message: 'Protocolo eliminado' } };
     }
   }
 

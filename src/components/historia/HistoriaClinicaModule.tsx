@@ -47,7 +47,9 @@ import {
   List,
   FolderOpen,
   Paperclip,
-  Check
+  Check,
+  Scale,
+  Ruler
 } from 'lucide-react';
 import { CIE10SearchInput } from '../common/CIE10SearchInput';
 import { jsPDF } from 'jspdf';
@@ -101,13 +103,26 @@ export const HistoriaClinicaModule: React.FC<HistoriaClinicaModuleProps> = ({
   const [showControlModal, setShowControlModal] = useState(false);
   const [editingControlIndex, setEditingControlIndex] = useState<number | null>(null);
 
-  // State for Multi-document attachment management
+  // State for multi-document attachment management
   const [uploadCategory, setUploadCategory] = useState<TipoDocumentoHCO>('EXPEDIENTE_HC_PDF');
   const [uploadNote, setUploadNote] = useState('');
   const [docCategoryFilter, setDocCategoryFilter] = useState<string>('TODOS');
   const [docSearchQuery, setDocSearchQuery] = useState('');
   const [previewDoc, setPreviewDoc] = useState<DocumentoAdjuntoHCO | null>(null);
   const [showMultiUploadModal, setShowMultiUploadModal] = useState(false);
+
+  // Text states for Antecedentes Personales to allow free spacebar usage
+  const [patologicasInput, setPatologicasInput] = useState('');
+  const [quirurgicasInput, setQuirurgicasInput] = useState('');
+  const [alergiasInput, setAlergiasInput] = useState('');
+
+  // Auto calculate IMC from weight (kg) and height (cm or m)
+  const calculateIMC = (pesoKg?: number, tallaValue?: number): number => {
+    if (!pesoKg || !tallaValue || pesoKg <= 0 || tallaValue <= 0) return 0;
+    const heightInMeters = tallaValue > 3 ? tallaValue / 100 : tallaValue;
+    if (heightInMeters <= 0) return 0;
+    return Number((pesoKg / (heightInMeters * heightInMeters)).toFixed(1));
+  };
 
   // Diagnostic state for adding CIE-10
   const [useManualCie, setUseManualCie] = useState(false);
@@ -221,13 +236,27 @@ export const HistoriaClinicaModule: React.FC<HistoriaClinicaModuleProps> = ({
   });
 
   const handleOpenEditModal = () => {
-    setEditForm(JSON.parse(JSON.stringify(hco)));
+    const copy = JSON.parse(JSON.stringify(hco));
+    setEditForm(copy);
+    setPatologicasInput(copy.antecedentesPersonales?.patologicas?.join(', ') || '');
+    setQuirurgicasInput(copy.antecedentesPersonales?.quirurgicas?.join(', ') || '');
+    setAlergiasInput(copy.antecedentesPersonales?.alergias?.join(', ') || '');
     setShowEditModal(true);
   };
 
   const handleSaveEditModal = () => {
+    const finalForm: HistoriaClinicaOcupacional = {
+      ...editForm,
+      antecedentesPersonales: {
+        ...editForm.antecedentesPersonales,
+        patologicas: patologicasInput.split(/[,;\n]/).map(s => s.trim()).filter(Boolean),
+        quirurgicas: quirurgicasInput.split(/[,;\n]/).map(s => s.trim()).filter(Boolean),
+        alergias: alergiasInput.split(/[,;\n]/).map(s => s.trim()).filter(Boolean),
+        habitosNocivos: editForm.antecedentesPersonales?.habitosNocivos || ''
+      }
+    };
     if (onUpdateHistoria) {
-      onUpdateHistoria(editForm);
+      onUpdateHistoria(finalForm);
     }
     setShowEditModal(false);
     alert('Historia Clínica Ocupacional actualizada exitosamente.');
@@ -582,9 +611,12 @@ export const HistoriaClinicaModule: React.FC<HistoriaClinicaModuleProps> = ({
       doc.text(`Frecuencia Cardíaca: ${hco.constantesVitalesMasRecientes.fc} LPM`, 70, y);
       doc.text(`Frecuencia Resp. (FR): ${hco.constantesVitalesMasRecientes.fr || 16} RPM`, 130, y);
       y += 5;
+      doc.text(`Peso: ${hco.constantesVitalesMasRecientes.peso ? `${hco.constantesVitalesMasRecientes.peso} kg` : 'N/R'}`, 12, y);
+      doc.text(`Talla: ${hco.constantesVitalesMasRecientes.talla ? `${hco.constantesVitalesMasRecientes.talla > 3 ? (hco.constantesVitalesMasRecientes.talla / 100).toFixed(2) : hco.constantesVitalesMasRecientes.talla} m` : 'N/R'}`, 70, y);
+      doc.text(`IMC: ${hco.constantesVitalesMasRecientes.imc || 0} kg/m²`, 130, y);
+      y += 5;
       doc.text(`Temperatura: ${hco.constantesVitalesMasRecientes.temperatura || 36.5} °C`, 12, y);
-      doc.text(`IMC: ${hco.constantesVitalesMasRecientes.imc} kg/m²`, 70, y);
-      doc.text(`Saturación O2: ${hco.constantesVitalesMasRecientes.saturacionO2}%`, 130, y);
+      doc.text(`Saturación O2: ${hco.constantesVitalesMasRecientes.saturacionO2}%`, 70, y);
       y += 8;
     }
 
@@ -722,6 +754,10 @@ export const HistoriaClinicaModule: React.FC<HistoriaClinicaModuleProps> = ({
         archivosAdjuntos: [newDocAdjunto, ...existingAdjuntos.filter(d => d.nombreArchivo !== filename)]
       });
     }
+
+    // Trigger browser file download directly
+    doc.save(filename);
+    alert(`PDF Oficial Consolidado generado y descargado con éxito: ${filename}`);
 
     return archivo;
   };
@@ -1242,17 +1278,21 @@ export const HistoriaClinicaModule: React.FC<HistoriaClinicaModuleProps> = ({
                       </div>
 
                       {/* Vital signs badge grid */}
-                      <div className="grid grid-cols-3 gap-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-[11px] font-mono">
+                      <div className="grid grid-cols-4 gap-1.5 bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-[11px] font-mono">
                         <div>
-                          <span className="text-[9px] text-slate-500 block">P. Arterial</span>
+                          <span className="text-[9px] text-slate-500 block truncate">Peso (kg)</span>
+                          <span className="font-bold text-slate-200">{h.constantesVitalesMasRecientes?.peso ? `${h.constantesVitalesMasRecientes.peso}k` : 'N/R'}</span>
+                        </div>
+                        <div>
+                          <span className="text-[9px] text-slate-500 block truncate">Talla (m)</span>
+                          <span className="font-bold text-slate-200">{h.constantesVitalesMasRecientes?.talla ? `${h.constantesVitalesMasRecientes.talla > 3 ? (h.constantesVitalesMasRecientes.talla / 100).toFixed(2) : h.constantesVitalesMasRecientes.talla}m` : 'N/R'}</span>
+                        </div>
+                        <div>
+                          <span className="text-[9px] text-slate-500 block truncate">P. Arterial</span>
                           <span className="font-bold text-emerald-400">{h.constantesVitalesMasRecientes?.pa || '120/80'}</span>
                         </div>
                         <div>
-                          <span className="text-[9px] text-slate-500 block">F. Cardíaca</span>
-                          <span className="font-bold text-rose-400">{h.constantesVitalesMasRecientes?.fc || 72} LPM</span>
-                        </div>
-                        <div>
-                          <span className="text-[9px] text-slate-500 block">IMC</span>
+                          <span className="text-[9px] text-slate-500 block truncate">IMC</span>
                           <span className="font-bold text-indigo-400">{h.constantesVitalesMasRecientes?.imc || 24.2}</span>
                         </div>
                       </div>
@@ -1538,7 +1578,25 @@ export const HistoriaClinicaModule: React.FC<HistoriaClinicaModuleProps> = ({
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider font-semibold">Peso</span>
+                  <div className="text-sm font-mono font-bold text-emerald-300 flex items-center gap-1.5">
+                    <Scale className="w-4 h-4 text-emerald-400 shrink-0" />
+                    {hco.constantesVitalesMasRecientes?.peso ? `${hco.constantesVitalesMasRecientes.peso} kg` : 'N/R'}
+                  </div>
+                </div>
+
+                <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider font-semibold">Talla / Estatura</span>
+                  <div className="text-sm font-mono font-bold text-indigo-300 flex items-center gap-1.5">
+                    <Ruler className="w-4 h-4 text-indigo-400 shrink-0" />
+                    {hco.constantesVitalesMasRecientes?.talla
+                      ? `${hco.constantesVitalesMasRecientes.talla > 3 ? (hco.constantesVitalesMasRecientes.talla / 100).toFixed(2) : hco.constantesVitalesMasRecientes.talla} m`
+                      : 'N/R'}
+                  </div>
+                </div>
+
                 <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-800">
                   <span className="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider font-semibold">Presión Arterial</span>
                   <div className="text-sm font-mono font-bold text-emerald-400 flex items-center gap-1.5">
@@ -1572,7 +1630,7 @@ export const HistoriaClinicaModule: React.FC<HistoriaClinicaModuleProps> = ({
                 </div>
 
                 <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-800">
-                  <span className="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider font-semibold">Índice Masa Corporal</span>
+                  <span className="text-[10px] text-slate-400 block mb-1 uppercase tracking-wider font-semibold">Índice Masa Corp. (IMC)</span>
                   <div className="text-sm font-mono font-bold text-indigo-400">
                     {hco.constantesVitalesMasRecientes?.imc || 0} kg/m²
                   </div>
@@ -2186,7 +2244,73 @@ export const HistoriaClinicaModule: React.FC<HistoriaClinicaModuleProps> = ({
                   <Activity className="w-4 h-4" /> 1. Constantes Vitales & Somatometría Inicial
                 </h4>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="text-[11px] text-slate-400 block mb-1">Peso (kg):</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={editForm.constantesVitalesMasRecientes?.peso ?? ''}
+                      onChange={(e) => {
+                        const newPeso = e.target.value !== '' ? Number(e.target.value) : undefined;
+                        const currentTalla = editForm.constantesVitalesMasRecientes?.talla;
+                        const calcImc = calculateIMC(newPeso, currentTalla) || editForm.constantesVitalesMasRecientes?.imc || 0;
+                        setEditForm({
+                          ...editForm,
+                          constantesVitalesMasRecientes: {
+                            ...editForm.constantesVitalesMasRecientes!,
+                            peso: newPeso,
+                            imc: calcImc
+                          }
+                        });
+                      }}
+                      placeholder="ej. 70.5"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-slate-400 block mb-1">Talla (cm / m):</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editForm.constantesVitalesMasRecientes?.talla ?? ''}
+                      onChange={(e) => {
+                        const newTalla = e.target.value !== '' ? Number(e.target.value) : undefined;
+                        const currentPeso = editForm.constantesVitalesMasRecientes?.peso;
+                        const calcImc = calculateIMC(currentPeso, newTalla) || editForm.constantesVitalesMasRecientes?.imc || 0;
+                        setEditForm({
+                          ...editForm,
+                          constantesVitalesMasRecientes: {
+                            ...editForm.constantesVitalesMasRecientes!,
+                            talla: newTalla,
+                            imc: calcImc
+                          }
+                        });
+                      }}
+                      placeholder="ej. 170 o 1.70"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-emerald-400 font-semibold block mb-1">IMC (Auto-calculado):</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={editForm.constantesVitalesMasRecientes?.imc || ''}
+                      onChange={(e) => setEditForm({
+                        ...editForm,
+                        constantesVitalesMasRecientes: {
+                          ...editForm.constantesVitalesMasRecientes!,
+                          imc: Number(e.target.value)
+                        }
+                      })}
+                      placeholder="ej. 24.5"
+                      className="w-full bg-slate-900 border border-emerald-500/50 rounded-lg px-3 py-1.5 text-xs text-emerald-300 font-mono font-bold focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
                   <div>
                     <label className="text-[11px] text-slate-400 block mb-1">Presión Arterial (PA):</label>
                     <input
@@ -2257,24 +2381,6 @@ export const HistoriaClinicaModule: React.FC<HistoriaClinicaModuleProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">IMC (kg/m²):</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={editForm.constantesVitalesMasRecientes?.imc || ''}
-                      onChange={(e) => setEditForm({
-                        ...editForm,
-                        constantesVitalesMasRecientes: {
-                          ...editForm.constantesVitalesMasRecientes!,
-                          imc: Number(e.target.value)
-                        }
-                      })}
-                      placeholder="ej. 24.5"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-
-                  <div>
                     <label className="text-[11px] text-slate-400 block mb-1">Saturación O2 (%):</label>
                     <input
                       type="number"
@@ -2301,18 +2407,12 @@ export const HistoriaClinicaModule: React.FC<HistoriaClinicaModuleProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">Patologías (Separadas por coma):</label>
+                    <label className="text-[11px] text-slate-400 block mb-1">Patologías (Texto libre con espacios):</label>
                     <input
                       type="text"
-                      value={editForm.antecedentesPersonales?.patologicas?.join(', ') || ''}
-                      onChange={(e) => setEditForm({
-                        ...editForm,
-                        antecedentesPersonales: {
-                          ...editForm.antecedentesPersonales,
-                          patologicas: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                        }
-                      })}
-                      placeholder="Gastritis, Hipertensión, etc."
+                      value={patologicasInput}
+                      onChange={(e) => setPatologicasInput(e.target.value)}
+                      placeholder="ej. Gastritis crónica, Hipertensión arterial"
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                     />
                   </div>
@@ -2321,15 +2421,9 @@ export const HistoriaClinicaModule: React.FC<HistoriaClinicaModuleProps> = ({
                     <label className="text-[11px] text-slate-400 block mb-1">Antecedentes Quirúrgicos:</label>
                     <input
                       type="text"
-                      value={editForm.antecedentesPersonales?.quirurgicas?.join(', ') || ''}
-                      onChange={(e) => setEditForm({
-                        ...editForm,
-                        antecedentesPersonales: {
-                          ...editForm.antecedentesPersonales,
-                          quirurgicas: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                        }
-                      })}
-                      placeholder="Apendicectomía, etc."
+                      value={quirurgicasInput}
+                      onChange={(e) => setQuirurgicasInput(e.target.value)}
+                      placeholder="ej. Apendicectomía laparoscopic, Colecistectomía"
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                     />
                   </div>
@@ -2338,15 +2432,9 @@ export const HistoriaClinicaModule: React.FC<HistoriaClinicaModuleProps> = ({
                     <label className="text-[11px] text-slate-400 block mb-1">Alergias Medicamentosas:</label>
                     <input
                       type="text"
-                      value={editForm.antecedentesPersonales?.alergias?.join(', ') || ''}
-                      onChange={(e) => setEditForm({
-                        ...editForm,
-                        antecedentesPersonales: {
-                          ...editForm.antecedentesPersonales,
-                          alergias: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                        }
-                      })}
-                      placeholder="Alergia a Penicilina, Sulfa, etc."
+                      value={alergiasInput}
+                      onChange={(e) => setAlergiasInput(e.target.value)}
+                      placeholder="ej. Alergia a Penicilina, Sulfa"
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                     />
                   </div>

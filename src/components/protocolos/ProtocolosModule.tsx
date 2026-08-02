@@ -20,7 +20,9 @@ import {
   Stethoscope,
   Table,
   FileCode,
-  Info
+  Info,
+  Edit3,
+  Save
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
@@ -44,6 +46,11 @@ export const ProtocolosModule: React.FC<ProtocolosModuleProps> = ({
 
   const [showModal, setShowModal] = useState(false);
   const [uploadFileModal, setUploadFileModal] = useState<{
+    open: boolean;
+    protocolo?: ProtocoloExamenMedico;
+  }>({ open: false });
+
+  const [editModal, setEditModal] = useState<{
     open: boolean;
     protocolo?: ProtocoloExamenMedico;
   }>({ open: false });
@@ -76,12 +83,18 @@ export const ProtocolosModule: React.FC<ProtocolosModuleProps> = ({
   const [isDragging, setIsDragging] = useState(false);
 
   // Filter Protocols
-  const filteredProtocolos = protocolos.filter(p => {
+  const filteredProtocolos = (protocolos || []).filter(p => {
+    if (!p) return false;
+    const nombre = p.nombreProtocolo || (p as any).nombre || '';
+    const codigo = p.codigoProtocolo || (p as any).codigo || '';
+    const bateria = p.descripcionBateria || '';
+    const sector = p.sectorActividad || 'GENERAL';
+
     const matchesSearch =
-      p.nombreProtocolo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.codigoProtocolo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.descripcionBateria.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSector = selectedSector === 'TODOS' || p.sectorActividad === selectedSector;
+      nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      bateria.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSector = selectedSector === 'TODOS' || sector === selectedSector;
     return matchesSearch && matchesSector;
   });
 
@@ -243,6 +256,29 @@ export const ProtocolosModule: React.FC<ProtocolosModuleProps> = ({
     });
   };
 
+  const handleUpdateProtocolSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editModal.protocolo) return;
+
+    const updatedProt: ProtocoloExamenMedico = {
+      ...editModal.protocolo,
+      empresaId: formData.empresaId || editModal.protocolo.empresaId,
+      nombreProtocolo: formData.nombreProtocolo || editModal.protocolo.nombreProtocolo,
+      codigoProtocolo: formData.codigoProtocolo || editModal.protocolo.codigoProtocolo,
+      sectorActividad: (formData.sectorActividad as any) || editModal.protocolo.sectorActividad,
+      tipoEvaluacion: (formData.tipoEvaluacion as any) || editModal.protocolo.tipoEvaluacion,
+      normaLegalBase: formData.normaLegalBase || editModal.protocolo.normaLegalBase,
+      descripcionBateria: formData.descripcionBateria || editModal.protocolo.descripcionBateria,
+      version: formData.version || editModal.protocolo.version || '1.1',
+      archivoProtocolo: formData.archivoProtocolo !== undefined ? formData.archivoProtocolo : editModal.protocolo.archivoProtocolo
+    };
+
+    if (onUpdateProtocolo) {
+      onUpdateProtocolo(updatedProt);
+    }
+    setEditModal({ open: false });
+  };
+
   const handleDownloadFile = (prot: ProtocoloExamenMedico) => {
     if (prot.archivoProtocolo?.dataUrl) {
       const a = document.createElement('a');
@@ -390,9 +426,15 @@ export const ProtocolosModule: React.FC<ProtocolosModuleProps> = ({
       {/* Protocols Grid / Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredProtocolos.map((prot) => {
-          const emp = empresas.find(e => e.id === prot.empresaId);
+          const emp = (empresas || []).find(e => e.id === prot.empresaId);
           const hasFile = !!prot.archivoProtocolo;
           const isExcel = prot.archivoProtocolo?.tipoArchivo === 'EXCEL';
+          const nombre = prot.nombreProtocolo || (prot as any).nombre || 'Protocolo EMO';
+          const codigo = prot.codigoProtocolo || (prot as any).codigo || 'PROT-001';
+          const sector = prot.sectorActividad || 'GENERAL';
+          const norma = prot.normaLegalBase || 'R.M. 312-2011-MINSA';
+          const bateria = prot.descripcionBateria || 'Batería de exámenes médicos ocupacionales';
+          const version = prot.version || '1.0';
 
           return (
             <div
@@ -403,30 +445,58 @@ export const ProtocolosModule: React.FC<ProtocolosModuleProps> = ({
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="px-2.5 py-0.5 bg-slate-800 text-indigo-300 font-mono text-[10px] font-bold border border-slate-700 rounded">
-                      {prot.codigoProtocolo}
+                      {codigo}
                     </span>
                     <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${
-                      prot.sectorActividad === 'MINERIA'
+                      sector === 'MINERIA'
                         ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                        : prot.sectorActividad === 'CONSTRUCCION'
+                        : sector === 'CONSTRUCCION'
                         ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
                         : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                     }`}>
-                      {prot.sectorActividad}
+                      {sector}
+                    </span>
+                    <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold uppercase rounded">
+                      {prot.tipoEvaluacion === 'INGRESO' ? 'PRE-OCUPACIONAL' :
+                       prot.tipoEvaluacion === 'PERIODICO' ? 'PERIÓDICO' :
+                       prot.tipoEvaluacion === 'RETIRO' ? 'RETIRO' :
+                       prot.tipoEvaluacion === 'REUBICACION' ? 'REUBICACIÓN' : 'TODOS LOS TIPOS'}
                     </span>
                   </div>
 
-                  <button
-                    onClick={() => setDeleteModal({ open: true, protocolo: prot })}
-                    className="p-1.5 bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/20 rounded-lg text-xs transition-colors shrink-0"
-                    title="Eliminar este Protocolo EMO"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => {
+                        setFormData({
+                          empresaId: prot.empresaId,
+                          nombreProtocolo: prot.nombreProtocolo,
+                          codigoProtocolo: prot.codigoProtocolo,
+                          sectorActividad: prot.sectorActividad,
+                          tipoEvaluacion: prot.tipoEvaluacion,
+                          normaLegalBase: prot.normaLegalBase,
+                          descripcionBateria: prot.descripcionBateria,
+                          version: prot.version || '1.0',
+                          archivoProtocolo: prot.archivoProtocolo
+                        });
+                        setEditModal({ open: true, protocolo: prot });
+                      }}
+                      className="p-1.5 bg-indigo-500/10 hover:bg-indigo-600 text-indigo-400 hover:text-white border border-indigo-500/20 rounded-lg text-xs transition-colors shrink-0"
+                      title="Editar este Protocolo EMO"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteModal({ open: true, protocolo: prot })}
+                      className="p-1.5 bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/20 rounded-lg text-xs transition-colors shrink-0"
+                      title="Eliminar este Protocolo EMO"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 <h3 className="font-bold text-white text-sm mb-1.5 line-clamp-2 group-hover:text-indigo-300 transition-colors">
-                  {prot.nombreProtocolo}
+                  {nombre}
                 </h3>
 
                 <div className="text-[11px] text-slate-400 space-y-1 mb-3">
@@ -436,17 +506,17 @@ export const ProtocolosModule: React.FC<ProtocolosModuleProps> = ({
                   </div>
                   <div className="flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>Base Legal: {prot.normaLegalBase}</span>
+                    <span>Base Legal: {norma}</span>
                   </div>
                 </div>
 
                 <div className="p-3 bg-slate-950/80 border border-slate-800/80 rounded-xl mb-4 text-[11px]">
                   <div className="text-slate-400 font-medium mb-1 flex items-center justify-between">
                     <span>Batería de Exámenes Exigidos:</span>
-                    <span className="text-[9px] text-slate-500">v{prot.version}</span>
+                    <span className="text-[9px] text-slate-500">v{version}</span>
                   </div>
                   <p className="text-slate-300 text-[10px] leading-relaxed line-clamp-3">
-                    {prot.descripcionBateria}
+                    {bateria}
                   </p>
                 </div>
               </div>
@@ -815,163 +885,458 @@ export const ProtocolosModule: React.FC<ProtocolosModuleProps> = ({
       )}
 
       {/* MODAL 3: Interactive Viewer (PDF / Excel Matrix Viewer) */}
-      {viewerModal.open && viewerModal.protocolo && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col p-5 shadow-2xl text-slate-100">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <ClipboardList className="w-5 h-5 text-indigo-400" />
-                <div>
-                  <h3 className="text-sm font-bold text-white">
-                    Visor de Protocolo: {viewerModal.protocolo.codigoProtocolo}
-                  </h3>
-                  <p className="text-[10px] text-slate-400">
-                    {viewerModal.protocolo.nombreProtocolo}
-                  </p>
+      {viewerModal.open && viewerModal.protocolo && (() => {
+        const activeViewerProt = (protocolos || []).find(p => p.id === viewerModal.protocolo?.id) || viewerModal.protocolo;
+        if (!activeViewerProt) return null;
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col p-5 shadow-2xl text-slate-100">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800 flex-wrap gap-2">
+                <div className="flex items-center gap-2.5">
+                  <ClipboardList className="w-5 h-5 text-indigo-400" />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-white">
+                        Visor de Protocolo: {activeViewerProt.codigoProtocolo}
+                      </h3>
+                      <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold uppercase rounded">
+                        EMO: {
+                          activeViewerProt.tipoEvaluacion === 'INGRESO' ? 'PRE-OCUPACIONAL' :
+                          activeViewerProt.tipoEvaluacion === 'PERIODICO' ? 'PERIÓDICO' :
+                          activeViewerProt.tipoEvaluacion === 'RETIRO' ? 'RETIRO' :
+                          activeViewerProt.tipoEvaluacion === 'REUBICACION' ? 'REUBICACIÓN' : 'TODOS LOS TIPOS'
+                        }
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400">
+                      {activeViewerProt.nombreProtocolo}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setFormData({
+                        empresaId: activeViewerProt.empresaId,
+                        nombreProtocolo: activeViewerProt.nombreProtocolo,
+                        codigoProtocolo: activeViewerProt.codigoProtocolo,
+                        sectorActividad: activeViewerProt.sectorActividad,
+                        tipoEvaluacion: activeViewerProt.tipoEvaluacion,
+                        normaLegalBase: activeViewerProt.normaLegalBase,
+                        descripcionBateria: activeViewerProt.descripcionBateria,
+                        version: activeViewerProt.version || '1.0',
+                        archivoProtocolo: activeViewerProt.archivoProtocolo
+                      });
+                      setEditModal({ open: true, protocolo: activeViewerProt });
+                    }}
+                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-md shadow-amber-900/40"
+                  >
+                    <Edit3 className="w-4 h-4" /> Editar Protocolo
+                  </button>
+
+                  <button
+                    onClick={() => handleDownloadFile(activeViewerProt)}
+                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-900/40"
+                  >
+                    <Download className="w-4 h-4" /> Descargar Archivo
+                  </button>
+
+                  <button
+                    onClick={() => setViewerModal({ open: false })}
+                    className="p-1.5 bg-slate-800 text-slate-400 hover:text-white rounded-lg border border-slate-700"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleDownloadFile(viewerModal.protocolo!)}
-                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-900/40"
-                >
-                  <Download className="w-4 h-4" /> Descargar Archivo
-                </button>
+              {/* Viewer Content */}
+              <div className="flex-1 my-3 bg-slate-950 rounded-xl overflow-hidden border border-slate-800 relative flex flex-col">
+                {activeViewerProt.archivoProtocolo?.tipoArchivo === 'EXCEL' ? (
+                  /* EXCEL / MATRIX INTERACTIVE SPREADSHEET TABLE VIEW */
+                  <div className="p-5 flex-1 overflow-y-auto space-y-4">
+                    <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-lg">
+                          <FileSpreadsheet className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-white text-xs">
+                            {activeViewerProt.archivoProtocolo?.nombreArchivo || `Matriz_Bateria_${activeViewerProt.codigoProtocolo}.xlsx`}
+                          </div>
+                          <div className="text-[10px] text-emerald-400 font-mono">
+                            Matriz de Batería de Exámenes Exigidos por la R.M. 312-2011-MINSA
+                          </div>
+                        </div>
+                      </div>
 
+                      <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 rounded text-[10px] font-bold">
+                        HOJA DE CÁLCULO ACTIVA
+                      </span>
+                    </div>
+
+                    {/* Sample Parsed Table for Protocol Examen Battery */}
+                    <div className="overflow-x-auto rounded-xl border border-slate-800">
+                      <table className="w-full text-left text-xs text-slate-300">
+                        <thead className="bg-slate-900 text-slate-400 uppercase text-[10px] font-bold border-b border-slate-800">
+                          <tr>
+                            <th className="px-3 py-2.5">N°</th>
+                            <th className="px-3 py-2.5">Examen / Evaluación Médica</th>
+                            <th className="px-3 py-2.5">Exigencia RM 312</th>
+                            <th className="px-3 py-2.5">Frecuencia</th>
+                            <th className="px-3 py-2.5">Factor de Riesgo Asociado</th>
+                            <th className="px-3 py-2.5">Criterio de Aptitud Ocupacional</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800 bg-slate-950 font-mono text-[11px]">
+                          <tr className="hover:bg-slate-900/60">
+                            <td className="px-3 py-2 text-slate-500">01</td>
+                            <td className="px-3 py-2 font-bold text-white font-sans">Triaje y Somatometría Completa</td>
+                            <td className="px-3 py-2 text-emerald-400">OBLIGATORIO</td>
+                            <td className="px-3 py-2 text-slate-300 font-sans">Anual</td>
+                            <td className="px-3 py-2 text-slate-400 font-sans">Ergonomía / Cardiovascular</td>
+                            <td className="px-3 py-2 text-amber-300 font-sans">IMC &lt; 35.0 (Sin Obesidad Mórbida)</td>
+                          </tr>
+                          <tr className="hover:bg-slate-900/60">
+                            <td className="px-3 py-2 text-slate-500">02</td>
+                            <td className="px-3 py-2 font-bold text-white font-sans">Examen Físico Clínico Ocupacional</td>
+                            <td className="px-3 py-2 text-emerald-400">OBLIGATORIO</td>
+                            <td className="px-3 py-2 text-slate-300 font-sans">Anual</td>
+                            <td className="px-3 py-2 text-slate-400 font-sans">Riesgo General Socavón/Superficie</td>
+                            <td className="px-3 py-2 text-emerald-300 font-sans">Apto para Trabajo Operativo</td>
+                          </tr>
+                          <tr className="hover:bg-slate-900/60">
+                            <td className="px-3 py-2 text-slate-500">03</td>
+                            <td className="px-3 py-2 font-bold text-white font-sans">Audiometría Tonal ISO 8253-1</td>
+                            <td className="px-3 py-2 text-emerald-400">OBLIGATORIO</td>
+                            <td className="px-3 py-2 text-slate-300 font-sans">Anual</td>
+                            <td className="px-3 py-2 text-slate-400 font-sans">Exposición a Ruido &gt; 85 dB(A)</td>
+                            <td className="px-3 py-2 text-slate-300 font-sans">Umbral Auditivo &lt; 25 dB o Nivel II</td>
+                          </tr>
+                          <tr className="hover:bg-slate-900/60">
+                            <td className="px-3 py-2 text-slate-500">04</td>
+                            <td className="px-3 py-2 font-bold text-white font-sans">Espirometría Digital ATS/ERS</td>
+                            <td className="px-3 py-2 text-emerald-400">OBLIGATORIO</td>
+                            <td className="px-3 py-2 text-slate-300 font-sans">Anual</td>
+                            <td className="px-3 py-2 text-slate-400 font-sans">Polvos Respirables / Sílice</td>
+                            <td className="px-3 py-2 text-slate-300 font-sans">FVC &gt; 80% y FEV1/FVC &gt; 70%</td>
+                          </tr>
+                          <tr className="hover:bg-slate-900/60">
+                            <td className="px-3 py-2 text-slate-500">05</td>
+                            <td className="px-3 py-2 font-bold text-white font-sans">Radiografía de Tórax OIT 2000</td>
+                            <td className="px-3 py-2 text-emerald-400">OBLIGATORIO</td>
+                            <td className="px-3 py-2 text-slate-300 font-sans">Anual</td>
+                            <td className="px-3 py-2 text-slate-400 font-sans">Neumoconiosis / Silicosis</td>
+                            <td className="px-3 py-2 text-slate-300 font-sans">Categoría OIT 0/0 (Sin Opacidades)</td>
+                          </tr>
+                          <tr className="hover:bg-slate-900/60">
+                            <td className="px-3 py-2 text-slate-500">06</td>
+                            <td className="px-3 py-2 font-bold text-white font-sans">Laboratorio: Perfil Hepático & Renal</td>
+                            <td className="px-3 py-2 text-emerald-400">OBLIGATORIO</td>
+                            <td className="px-3 py-2 text-slate-300 font-sans">Anual</td>
+                            <td className="px-3 py-2 text-slate-400 font-sans">Sustancias Químicas / Metales</td>
+                            <td className="px-3 py-2 text-slate-300 font-sans">TGO/TGP &lt; 40 U/L, Creatinina normal</td>
+                          </tr>
+                          <tr className="hover:bg-slate-900/60">
+                            <td className="px-3 py-2 text-slate-500">07</td>
+                            <td className="px-3 py-2 font-bold text-white font-sans">Evaluación Psicológica Ocupacional</td>
+                            <td className="px-3 py-2 text-emerald-400">OBLIGATORIO</td>
+                            <td className="px-3 py-2 text-slate-300 font-sans">Anual</td>
+                            <td className="px-3 py-2 text-slate-400 font-sans">Trabajos en Altura &gt; 2500 msnm</td>
+                            <td className="px-3 py-2 text-emerald-300 font-sans">Apto Psico-emocional / Acrofobia (-)</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="p-3 bg-slate-900/60 border border-slate-800 rounded-lg text-xs text-slate-400 flex items-center gap-2">
+                      <Info className="w-4 h-4 text-indigo-400 shrink-0" />
+                      <span>
+                        Detalle técnico del protocolo oficial. Para exportar esta matriz en formato editable Microsoft Excel o CSV, presiona el botón <strong>Descargar Archivo</strong>.
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  /* PDF DOCUMENT VIEWER (Displays uploaded PDF or auto-generated official PDF) */
+                  <iframe
+                    key={activeViewerProt.archivoProtocolo?.dataUrl || activeViewerProt.id}
+                    src={
+                      activeViewerProt.archivoProtocolo?.dataUrl ||
+                      (() => {
+                        const emp = (empresas || []).find(e => e.id === activeViewerProt.empresaId);
+                        const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+                        doc.setFillColor(15, 23, 42);
+                        doc.rect(10, 10, 190, 20, 'F');
+                        doc.setTextColor(255, 255, 255);
+                        doc.setFont('helvetica', 'bold');
+                        doc.setFontSize(11);
+                        doc.text('MATRIZ OFICIAL DE PROTOCOLO DE EXAMENES MEDICOS EMO', 105, 18, { align: 'center' });
+                        doc.setFontSize(8);
+                        doc.setFont('helvetica', 'normal');
+                        doc.text('CUMPLIMIENTO LEGAL R.M. 312-2011-MINSA / SALUD OCUPACIONAL', 105, 24, { align: 'center' });
+
+                        let y = 38;
+                        doc.setTextColor(15, 23, 42);
+                        doc.setFontSize(9);
+                        doc.setFont('helvetica', 'bold');
+                        doc.text(`CÓDIGO PROTOCOLO: ${activeViewerProt.codigoProtocolo}`, 12, y);
+                        doc.text(`SECTOR: ${activeViewerProt.sectorActividad}`, 120, y);
+                        y += 6;
+                        doc.text(`TIPO DE EVALUACIÓN: ${
+                          activeViewerProt.tipoEvaluacion === 'INGRESO' ? 'PRE-OCUPACIONAL (INGRESO)' :
+                          activeViewerProt.tipoEvaluacion === 'PERIODICO' ? 'PERIÓDICO (ANUAL)' :
+                          activeViewerProt.tipoEvaluacion === 'RETIRO' ? 'RETIRO' :
+                          activeViewerProt.tipoEvaluacion === 'REUBICACION' ? 'REUBICACIÓN' : 'TODOS LOS TIPOS'
+                        }`, 12, y);
+                        y += 6;
+                        doc.setFont('helvetica', 'normal');
+                        doc.text(`Nombre Protocolo: ${activeViewerProt.nombreProtocolo}`, 12, y);
+                        y += 6;
+                        doc.text(`Empresa / Entidad: ${emp?.razonSocial || 'Compañía Registrada'} (RUC: ${emp?.ruc || 'N/A'})`, 12, y);
+                        y += 6;
+                        doc.text(`Norma Base Legal: ${activeViewerProt.normaLegalBase}`, 12, y);
+                        y += 8;
+
+                        doc.setFillColor(241, 245, 249);
+                        doc.rect(10, y, 190, 6, 'F');
+                        doc.setFont('helvetica', 'bold');
+                        doc.text('BATERIA DE EXAMENES CLINICOS Y COMPLEMENTARIOS EXIGIDOS', 12, y + 4.2);
+                        y += 10;
+
+                        const bateria = activeViewerProt.descripcionBateria ? activeViewerProt.descripcionBateria.split(',') : ['Triaje', 'Medicina General', 'Espirometría', 'Audiometría'];
+                        bateria.forEach((ex, idx) => {
+                          doc.setFont('helvetica', 'normal');
+                          doc.text(`${idx + 1}. ${ex.trim()} --- Exigido según Riesgo IPERC (Anexo 02 RM 312-2011)`, 14, y);
+                          y += 6;
+                        });
+
+                        y += 10;
+                        doc.setFont('helvetica', 'bold');
+                        doc.text('Aprobado por el Médico Ocupacional (CMP / RNM)', 12, y);
+                        doc.setFont('helvetica', 'normal');
+                        doc.text('ERP MedOcupa - Documento Médico Registrado Oficialmente', 12, y + 5);
+
+                        return doc.output('datauristring');
+                      })()
+                    }
+                    className="w-full h-full bg-white rounded-xl"
+                    title="Visor Documento Protocolo EMO"
+                  />
+                )}
+              </div>
+
+              <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                <span>R.M. 312-2011-MINSA • Protocolo Aprobado e Integrado en ERP MedOcupa</span>
                 <button
                   onClick={() => setViewerModal({ open: false })}
-                  className="p-1.5 bg-slate-800 text-slate-400 hover:text-white rounded-lg border border-slate-700"
+                  className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg"
                 >
-                  <X className="w-5 h-5" />
+                  Cerrar Visor
                 </button>
               </div>
             </div>
+          </div>
+        );
+      })()}
 
-            {/* Viewer Content */}
-            <div className="flex-1 my-3 bg-slate-950 rounded-xl overflow-hidden border border-slate-800 relative flex flex-col">
-              {viewerModal.protocolo.archivoProtocolo?.dataUrl && viewerModal.protocolo.archivoProtocolo.tipoArchivo === 'PDF' ? (
-                <iframe
-                  src={viewerModal.protocolo.archivoProtocolo.dataUrl}
-                  className="w-full h-full bg-white rounded-xl"
-                  title="Visor PDF Protocolo"
+      {/* MODAL 3.5: Edit Protocol Modal */}
+      {editModal.open && editModal.protocolo && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl p-6 shadow-2xl text-slate-100 my-8">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+              <h3 className="text-lg font-bold font-display text-white flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-amber-400" /> Editar Protocolo de Exámenes Médicos
+              </h3>
+              <button onClick={() => setEditModal({ open: false })} className="text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <form onSubmit={handleUpdateProtocolSubmit} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Empresa Cliente / Sede</label>
+                  <select
+                    value={formData.empresaId}
+                    onChange={(e) => setFormData({ ...formData, empresaId: e.target.value })}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
+                  >
+                    {empresas.map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.razonSocial} ({e.ruc})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Código del Protocolo</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.codigoProtocolo}
+                    onChange={(e) => setFormData({ ...formData, codigoProtocolo: e.target.value })}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">Nombre / Título del Protocolo</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.nombreProtocolo}
+                  onChange={(e) => setFormData({ ...formData, nombreProtocolo: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white"
                 />
-              ) : (
-                /* EXCEL / MATRIX INTERACTIVE SPREADSHEET TABLE VIEW */
-                <div className="p-5 flex-1 overflow-y-auto space-y-4">
-                  <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-between">
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Sector / Actividad</label>
+                  <select
+                    value={formData.sectorActividad}
+                    onChange={(e) => setFormData({ ...formData, sectorActividad: e.target.value as any })}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white"
+                  >
+                    <option value="MINERIA">MINERÍA</option>
+                    <option value="CONSTRUCCION">CONSTRUCCIÓN</option>
+                    <option value="AGROINDUSTRIA">AGROINDUSTRIA</option>
+                    <option value="SALUD">SALUD</option>
+                    <option value="ELECTRICIDAD">ELECTRICIDAD</option>
+                    <option value="GENERAL">GENERAL</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Tipo de Evaluación EMO</label>
+                  <select
+                    value={formData.tipoEvaluacion}
+                    onChange={(e) => setFormData({ ...formData, tipoEvaluacion: e.target.value as any })}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white"
+                  >
+                    <option value="TODOS">TODOS LOS TIPOS</option>
+                    <option value="INGRESO">PRE-OCUPACIONAL (INGRESO)</option>
+                    <option value="PERIODICO">PERIÓDICO (ANUAL)</option>
+                    <option value="RETIRO">RETIRO</option>
+                    <option value="REUBICACION">REUBICACIÓN LABORAL</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Base Legal / Norma</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.normaLegalBase}
+                    onChange={(e) => setFormData({ ...formData, normaLegalBase: e.target.value })}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">Batería de Exámenes Exigidos (Detalle)</label>
+                <textarea
+                  rows={3}
+                  required
+                  value={formData.descripcionBateria}
+                  onChange={(e) => setFormData({ ...formData, descripcionBateria: e.target.value })}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              {/* UPLOAD FILE SECTION (PDF OR EXCEL) IN EDIT */}
+              <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    <FileUp className="w-4 h-4 text-indigo-400" />
+                    Documento de Protocolo Adjunto (PDF o Excel)
+                  </label>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handleGenerateSampleExcel}
+                      className="text-[10px] px-2 py-1 bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600 hover:text-white border border-emerald-500/30 rounded font-semibold flex items-center gap-1 transition-all"
+                    >
+                      <FileSpreadsheet className="w-3 h-3" /> Generar Excel
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleGenerateSamplePdf}
+                      className="text-[10px] px-2 py-1 bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600 hover:text-white border border-indigo-500/30 rounded font-semibold flex items-center gap-1 transition-all"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-400" /> Generar PDF
+                    </button>
+                  </div>
+                </div>
+
+                {formData.archivoProtocolo ? (
+                  <div className="p-3 bg-indigo-950/40 border border-indigo-500/40 rounded-lg flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-lg">
-                        <FileSpreadsheet className="w-6 h-6" />
+                      <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-300">
+                        <CheckCircle2 className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="font-bold text-white text-xs">
-                          {viewerModal.protocolo.archivoProtocolo?.nombreArchivo || `Matriz_Bateria_${viewerModal.protocolo.codigoProtocolo}.xlsx`}
+                        <div className="font-bold text-slate-200 text-xs">
+                          {formData.archivoProtocolo.nombreArchivo}
                         </div>
-                        <div className="text-[10px] text-emerald-400 font-mono">
-                          Matriz de Batería de Exámenes Exigidos por la R.M. 312-2011-MINSA
+                        <div className="text-[10px] text-indigo-300">
+                          Formato {formData.archivoProtocolo.tipoArchivo} • {formatFileSize(formData.archivoProtocolo.tamanioBytes)} • Creado el {formData.archivoProtocolo.fechaSubida}
                         </div>
                       </div>
                     </div>
 
-                    <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 rounded text-[10px] font-bold">
-                      HOJA DE CÁLCULO ACTIVA
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, archivoProtocolo: undefined })}
+                      className="p-1 bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white rounded border border-rose-500/30 transition-all"
+                      title="Quitar archivo"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-
-                  {/* Sample Parsed Table for Protocol Examen Battery */}
-                  <div className="overflow-x-auto rounded-xl border border-slate-800">
-                    <table className="w-full text-left text-xs text-slate-300">
-                      <thead className="bg-slate-900 text-slate-400 uppercase text-[10px] font-bold border-b border-slate-800">
-                        <tr>
-                          <th className="px-3 py-2.5">N°</th>
-                          <th className="px-3 py-2.5">Examen / Evaluación Médica</th>
-                          <th className="px-3 py-2.5">Exigencia RM 312</th>
-                          <th className="px-3 py-2.5">Frecuencia</th>
-                          <th className="px-3 py-2.5">Factor de Riesgo Asociado</th>
-                          <th className="px-3 py-2.5">Criterio de Aptitud Ocupacional</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-800 bg-slate-950 font-mono text-[11px]">
-                        <tr className="hover:bg-slate-900/60">
-                          <td className="px-3 py-2 text-slate-500">01</td>
-                          <td className="px-3 py-2 font-bold text-white font-sans">Triaje y Somatometría Completa</td>
-                          <td className="px-3 py-2 text-emerald-400">OBLIGATORIO</td>
-                          <td className="px-3 py-2 text-slate-300 font-sans">Anual</td>
-                          <td className="px-3 py-2 text-slate-400 font-sans">Ergonomía / Cardiovascular</td>
-                          <td className="px-3 py-2 text-amber-300 font-sans">IMC &lt; 35.0 (Sin Obesidad Mórbida)</td>
-                        </tr>
-                        <tr className="hover:bg-slate-900/60">
-                          <td className="px-3 py-2 text-slate-500">02</td>
-                          <td className="px-3 py-2 font-bold text-white font-sans">Examen Físico Clínico Ocupacional</td>
-                          <td className="px-3 py-2 text-emerald-400">OBLIGATORIO</td>
-                          <td className="px-3 py-2 text-slate-300 font-sans">Anual</td>
-                          <td className="px-3 py-2 text-slate-400 font-sans">Riesgo General Socavón/Superficie</td>
-                          <td className="px-3 py-2 text-emerald-300 font-sans">Apto para Trabajo Operativo</td>
-                        </tr>
-                        <tr className="hover:bg-slate-900/60">
-                          <td className="px-3 py-2 text-slate-500">03</td>
-                          <td className="px-3 py-2 font-bold text-white font-sans">Audiometría Tonal ISO 8253-1</td>
-                          <td className="px-3 py-2 text-emerald-400">OBLIGATORIO</td>
-                          <td className="px-3 py-2 text-slate-300 font-sans">Anual</td>
-                          <td className="px-3 py-2 text-slate-400 font-sans">Exposición a Ruido &gt; 85 dB(A)</td>
-                          <td className="px-3 py-2 text-slate-300 font-sans">Umbral Auditivo &lt; 25 dB o Nivel II</td>
-                        </tr>
-                        <tr className="hover:bg-slate-900/60">
-                          <td className="px-3 py-2 text-slate-500">04</td>
-                          <td className="px-3 py-2 font-bold text-white font-sans">Espirometría Digital ATS/ERS</td>
-                          <td className="px-3 py-2 text-emerald-400">OBLIGATORIO</td>
-                          <td className="px-3 py-2 text-slate-300 font-sans">Anual</td>
-                          <td className="px-3 py-2 text-slate-400 font-sans">Polvos Respirables / Sílice</td>
-                          <td className="px-3 py-2 text-slate-300 font-sans">FVC &gt; 80% y FEV1/FVC &gt; 70%</td>
-                        </tr>
-                        <tr className="hover:bg-slate-900/60">
-                          <td className="px-3 py-2 text-slate-500">05</td>
-                          <td className="px-3 py-2 font-bold text-white font-sans">Radiografía de Tórax OIT 2000</td>
-                          <td className="px-3 py-2 text-emerald-400">OBLIGATORIO</td>
-                          <td className="px-3 py-2 text-slate-300 font-sans">Anual</td>
-                          <td className="px-3 py-2 text-slate-400 font-sans">Neumoconiosis / Silicosis</td>
-                          <td className="px-3 py-2 text-slate-300 font-sans">Categoría OIT 0/0 (Sin Opacidades)</td>
-                        </tr>
-                        <tr className="hover:bg-slate-900/60">
-                          <td className="px-3 py-2 text-slate-500">06</td>
-                          <td className="px-3 py-2 font-bold text-white font-sans">Laboratorio: Perfil Hepático & Renal</td>
-                          <td className="px-3 py-2 text-emerald-400">OBLIGATORIO</td>
-                          <td className="px-3 py-2 text-slate-300 font-sans">Anual</td>
-                          <td className="px-3 py-2 text-slate-400 font-sans">Sustancias Químicas / Metales</td>
-                          <td className="px-3 py-2 text-slate-300 font-sans">TGO/TGP &lt; 40 U/L, Creatinina normal</td>
-                        </tr>
-                        <tr className="hover:bg-slate-900/60">
-                          <td className="px-3 py-2 text-slate-500">07</td>
-                          <td className="px-3 py-2 font-bold text-white font-sans">Evaluación Psicológica Ocupacional</td>
-                          <td className="px-3 py-2 text-emerald-400">OBLIGATORIO</td>
-                          <td className="px-3 py-2 text-slate-300 font-sans">Anual</td>
-                          <td className="px-3 py-2 text-slate-400 font-sans">Trabajos en Altura &gt; 2500 msnm</td>
-                          <td className="px-3 py-2 text-emerald-300 font-sans">Apto Psico-emocional / Acrofobia (-)</td>
-                        </tr>
-                      </tbody>
-                    </table>
+                ) : (
+                  <div>
+                    <input
+                      type="file"
+                      id="edit-prot-file-upload-input"
+                      accept=".pdf,.xlsx,.xls,.csv"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          handleFileProcess(e.target.files[0], (archivo) => {
+                            setFormData({ ...formData, archivoProtocolo: archivo });
+                          });
+                        }
+                      }}
+                    />
+                    <label htmlFor="edit-prot-file-upload-input" className="p-3 bg-slate-900 border border-slate-700 hover:border-indigo-500 rounded-xl cursor-pointer flex items-center justify-center gap-2 text-indigo-400 font-bold text-xs">
+                      <Upload className="w-4 h-4" /> Seleccionar Archivo PDF o Excel (.xlsx)
+                    </label>
                   </div>
+                )}
+              </div>
 
-                  <div className="p-3 bg-slate-900/60 border border-slate-800 rounded-lg text-xs text-slate-400 flex items-center gap-2">
-                    <Info className="w-4 h-4 text-indigo-400 shrink-0" />
-                    <span>
-                      Detalle técnico del protocolo oficial. Para exportar esta matriz en formato editable Microsoft Excel o CSV, presiona el botón <strong>Descargar Archivo</strong>.
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-              <span>R.M. 312-2011-MINSA • Protocolo Aprobado e Integrado en ERP MedOcupa</span>
-              <button
-                onClick={() => setViewerModal({ open: false })}
-                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg"
-              >
-                Cerrar Visor
-              </button>
-            </div>
+              <div className="pt-4 border-t border-slate-800 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditModal({ open: false })}
+                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg font-medium hover:bg-slate-700"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold shadow-lg shadow-indigo-900/30 flex items-center gap-2"
+                >
+                  <Save className="w-4 h-4" /> Guardar Cambios
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -42,4 +42,4 @@ jobs:
           releaseBody: 'Descarga el instalador ejecutable de MedOcupa ERP para Windows.'
           releaseDraft: false
           prerelease: false
-          
+          packageManager: npm

@@ -836,16 +836,30 @@ function showModalEmpresaOrEdit(
             />
           </div>
 
-          <div>
-            <label className="block text-slate-300 font-medium mb-1">Dirección Fiscal / Sede Principal</label>
-            <input
-              type="text"
-              required
-              value={formData.direccion || ''}
-              onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
-              placeholder="Av. Principal 123"
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-emerald-500"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-300 font-medium mb-1">Número de Trabajadores Total</label>
+              <input
+                type="number"
+                min={1}
+                required
+                value={formData.totalTrabajadores ?? 100}
+                onChange={(e) => setFormData({ ...formData, totalTrabajadores: Number(e.target.value) })}
+                placeholder="Ej: 150"
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-emerald-500 font-bold font-mono text-emerald-400"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-300 font-medium mb-1">Dirección Fiscal / Sede Principal</label>
+              <input
+                type="text"
+                required
+                value={formData.direccion || ''}
+                onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
+                placeholder="Av. Principal 123"
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-emerald-500"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
